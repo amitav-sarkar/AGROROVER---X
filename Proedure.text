@@ -1,0 +1,362 @@
+# Minimal installation
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-opencv
+pip3 install flask opencv-python RPi.GPIO requests pillow
+
+# Optional for soil sensor
+pip3 install adafruit-circuitpython-ads1x15
+
+# Optional for LSC-6
+pip3 install pyserial
+
+# If you want YOLO (optional, may be slow)
+pip3 install ultralytics --no-deps
+
+#!/bin/bash
+# ============================================================
+# SMART AGRICULTURE SYSTEM - COMPLETE INSTALL GUIDE
+# Raspberry Pi Zero 2W  |  Raspberry Pi OS Lite (64-bit)
+# ============================================================
+# Run each SECTION one at a time and wait for it to finish
+# before moving to the next one.
+# ============================================================
+
+
+# ============================================================
+# SECTION 1 — SYSTEM UPDATE
+# ============================================================
+
+sudo apt-get update && sudo apt-get upgrade -y
+
+
+# ============================================================
+# SECTION 2 — SYSTEM DEPENDENCIES
+# ============================================================
+
+sudo apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    git \
+    libatlas-base-dev \
+    libopenblas-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    libhdf5-dev \
+    libhdf5-serial-dev \
+    gfortran \
+    i2c-tools \
+    python3-smbus \
+    cmake \
+    build-essential \
+    pkg-config
+
+
+# ============================================================
+# SECTION 3 — ENABLE CAMERA & I2C & SERIAL
+# ============================================================
+
+# Run raspi-config and enable:
+#   Interface Options → Camera       → Enable
+#   Interface Options → I2C          → Enable
+#   Interface Options → Serial Port  → Enable (no login shell, yes hardware)
+
+sudo raspi-config
+
+# After raspi-config, verify I2C is working (connect your sensor first)
+sudo i2cdetect -y 1
+# You should see your ADS1115 address (usually 0x48)
+
+
+# ============================================================
+# SECTION 4 — CREATE PROJECT FOLDER
+# ============================================================
+
+mkdir -p ~/agriculture_system
+mkdir -p ~/agriculture_system/templates
+mkdir -p ~/agriculture_system/models
+mkdir -p ~/agriculture_system/logs
+
+cd ~/agriculture_system
+
+
+# ============================================================
+# SECTION 5 — CREATE & ACTIVATE VIRTUAL ENVIRONMENT
+# ============================================================
+
+python3 -m venv venv
+
+# Activate the virtual environment
+source ~/agriculture_system/venv/bin/activate
+
+# Your terminal prompt should now show: (venv) pi@raspberrypi:~$
+# IMPORTANT: Every time you open a new terminal, run:
+#   source ~/agriculture_system/venv/bin/activate
+
+
+# ============================================================
+# SECTION 6 — UPGRADE PIP INSIDE VENV
+# ============================================================
+
+pip install --upgrade pip setuptools wheel
+
+
+# ============================================================
+# SECTION 7 — INSTALL CORE PACKAGES
+# ============================================================
+
+# Flask web server
+pip install flask
+
+# OpenCV (lightweight build for Pi Zero)
+pip install opencv-python-headless
+
+# Pillow for image handling
+pip install pillow
+
+# NumPy (required by most packages)
+pip install numpy
+
+
+# ============================================================
+# SECTION 8 — INSTALL GPIO & SENSOR PACKAGES
+# ============================================================
+
+# GPIO control
+pip install RPi.GPIO
+
+# I2C / ADS1115 soil moisture sensor
+pip install adafruit-circuitpython-ads1x15
+pip install adafruit-blinka
+
+# Serial communication for LSC-6 Bluetooth controller
+pip install pyserial
+
+
+# ============================================================
+# SECTION 9 — INSTALL YOLO (OPTIONAL)
+# ============================================================
+# ONLY do this if you have enough storage and RAM.
+# Pi Zero 2W has 512MB RAM — YOLO will be slow.
+# Skip this section if you want to use the built-in
+# color-based detection instead (recommended for Zero 2W).
+
+# Option A: Skip YOLO (recommended)
+echo "Skipping YOLO — using lightweight color-based detection"
+
+# Option B: Install YOLO (takes 10-20 minutes, needs ~1.5GB)
+# Uncomment lines below only if you want YOLO:
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
+# pip install ultralytics --no-deps
+# pip install torchvision --index-url https://download.pytorch.org/whl/cpu
+
+
+# ============================================================
+# SECTION 10 — INSTALL GEMINI AI (OPTIONAL)
+# ============================================================
+# Only needed if you want Google Gemini online analysis.
+# Requires a valid API key and internet connection.
+
+pip install google-generativeai
+
+
+# ============================================================
+# SECTION 11 — VERIFY ALL INSTALLATIONS
+# ============================================================
+
+echo ""
+echo "=============================="
+echo " VERIFYING INSTALLATIONS"
+echo "=============================="
+echo ""
+
+python3 -c "import flask; print('✅ Flask:', flask.__version__)"
+python3 -c "import cv2; print('✅ OpenCV:', cv2.__version__)"
+python3 -c "import PIL; print('✅ Pillow:', PIL.__version__)"
+python3 -c "import numpy; print('✅ NumPy:', numpy.__version__)"
+python3 -c "import RPi.GPIO as GPIO; print('✅ RPi.GPIO: OK')"
+python3 -c "import serial; print('✅ PySerial: OK')"
+python3 -c "import adafruit_ads1x15; print('✅ ADS1115: OK')"
+python3 -c "import google.generativeai; print('✅ Gemini: OK')" 2>/dev/null || echo "⚠️  Gemini: Not installed (optional)"
+python3 -c "from ultralytics import YOLO; print('✅ YOLO: OK')" 2>/dev/null || echo "⚠️  YOLO: Not installed (using color detection)"
+
+echo ""
+echo "=============================="
+
+
+# ============================================================
+# SECTION 12 — COPY YOUR PROJECT FILES
+# ============================================================
+
+# Place your files like this:
+#
+#   ~/agriculture_system/
+#   ├── venv/                   ← virtual environment
+#   ├── agriculture_system.py   ← main Python file
+#   ├── templates/
+#   │   └── index.html          ← web interface
+#   ├── models/
+#   │   └── best.pt             ← YOLO model (optional)
+#   └── logs/                   ← log output folder
+
+# Copy main script (adjust path if needed)
+# cp /path/to/agriculture_system.py ~/agriculture_system/
+# cp /path/to/index.html ~/agriculture_system/templates/
+# cp /path/to/best.pt ~/agriculture_system/models/
+
+
+# ============================================================
+# SECTION 13 — CREATE AUTOSTART SERVICE (systemd)
+# ============================================================
+# This makes the system start automatically on boot.
+
+sudo tee /etc/systemd/system/agriculture.service > /dev/null <<EOF
+[Unit]
+Description=Smart Agriculture Monitoring System
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/agriculture_system
+ExecStart=/home/pi/agriculture_system/venv/bin/python3 agriculture_system.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start the service
+sudo systemctl daemon-reload
+sudo systemctl enable agriculture.service
+sudo systemctl start agriculture.service
+
+# Check if service is running
+sudo systemctl status agriculture.service
+
+
+# ============================================================
+# SECTION 14 — USEFUL SERVICE COMMANDS
+# ============================================================
+
+# Start the service manually
+sudo systemctl start agriculture.service
+
+# Stop the service
+sudo systemctl stop agriculture.service
+
+# Restart the service
+sudo systemctl restart agriculture.service
+
+# View live logs
+sudo journalctl -u agriculture.service -f
+
+# Disable autostart
+sudo systemctl disable agriculture.service
+
+
+# ============================================================
+# SECTION 15 — RUN MANUALLY (WITHOUT AUTOSTART)
+# ============================================================
+# Use this for testing and debugging.
+
+cd ~/agriculture_system
+source venv/bin/activate
+python3 agriculture_system.py
+
+# Access web interface at:
+#   http://raspberrypi.local:5000
+#   or
+#   http://<YOUR_PI_IP>:5000
+#
+# Find your Pi's IP address with:
+hostname -I
+
+
+# ============================================================
+# SECTION 16 — CHECK USB PORT FOR LSC-6
+# ============================================================
+
+# List all connected USB serial devices
+ls /dev/ttyUSB*
+ls /dev/ttyACM*
+
+# If you see /dev/ttyUSB0, that's your LSC-6 port (default in config)
+# If it shows /dev/ttyUSB1 or similar, update LSC6_PORT in Config
+
+
+# ============================================================
+# SECTION 17 — CAMERA TEST
+# ============================================================
+
+# Test Pi camera is working
+libcamera-hello --timeout 2000
+
+# Test OpenCV camera access
+python3 -c "
+import cv2
+cap = cv2.VideoCapture(0)
+ret, frame = cap.read()
+print('✅ Camera OK' if ret else '❌ Camera not detected')
+cap.release()
+"
+
+
+# ============================================================
+# SECTION 18 — MEMORY & PERFORMANCE TWEAKS
+# ============================================================
+
+# Increase swap space for Pi Zero 2W (helps with heavy packages)
+sudo dphys-swapfile swapoff
+sudo sed -i 's/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=512/' /etc/dphys-swapfile
+sudo dphys-swapfile setup
+sudo dphys-swapfile swapon
+
+# Reduce GPU memory to give more RAM to CPU
+echo "gpu_mem=16" | sudo tee -a /boot/config.txt
+
+# Reboot to apply
+sudo reboot
+
+
+# ============================================================
+# SECTION 19 — RE-ACTIVATE VENV AFTER REBOOT
+# ============================================================
+# After every reboot or new terminal session:
+
+cd ~/agriculture_system
+source venv/bin/activate
+python3 agriculture_system.py
+
+# Or if using systemd autostart, it runs automatically.
+# No need to activate venv manually.
+
+
+# ============================================================
+# QUICK REFERENCE CHEAT SHEET
+# ============================================================
+#
+#  ACTIVATE VENV:         source ~/agriculture_system/venv/bin/activate
+#  DEACTIVATE VENV:       deactivate
+#  RUN SYSTEM:            python3 agriculture_system.py
+#  CHECK SERVICE:         sudo systemctl status agriculture.service
+#  VIEW LOGS:             sudo journalctl -u agriculture.service -f
+#  FIND Pi IP:            hostname -I
+#  WEB INTERFACE:         http://<Pi_IP>:5000
+#  I2C DEVICES:           sudo i2cdetect -y 1
+#  USB SERIAL PORTS:      ls /dev/ttyUSB*
+#  CHECK CAMERA:          libcamera-hello --timeout 2000
+#
+# ============================================================
